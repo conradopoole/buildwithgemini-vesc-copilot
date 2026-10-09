@@ -39,6 +39,88 @@
 
 ---
 
+
+### 1.1 Agent Architecture & Tool Suite Diagram
+
+The diagram below details the internal structure of **`root_agent`**, its execution pipeline, callbacks, and the suite of 11 tools categorized by their function:
+
+```mermaid
+graph TD
+    subgraph ClientLayer ["Client & Proxy Layer"]
+        Browser["User Browser (Chat UI)"] -->|HTTP / JSON| FastAPIProxy["FastAPI Proxy (frontend/main.py)"]
+        FastAPIProxy -->|A2A Protocol| RootAgent
+    end
+
+    subgraph AgentCore ["ADK Agent Engine (root_agent)"]
+        RootAgent["Root Agent<br/>(Gemini 2.5 Flash)"]
+        
+        subgraph PipelineCallbacks ["Lifecycle Callbacks"]
+            MemCallback["after_agent_callback:<br/>generate_memories_callback()"]
+            A2UICallback["after_model_callback:<br/>a2ui_callback()"]
+        end
+
+        RootAgent --> MemCallback
+        RootAgent --> A2UICallback
+    end
+
+    subgraph MemoryTools ["1. Memory & State"]
+        T_Mem["PreloadMemoryTool()"]
+        MemCallback -.->|Persist session| VertexMemoryBank[("Vertex AI Memory Bank<br/>Long-term Rider Specs")]
+        T_Mem -.->|Preload context| VertexMemoryBank
+    end
+
+    subgraph KnowledgeTools ["2. Community Knowledge & Retrieval"]
+        T_PEV["search_pev_knowledge()"] -->|Query Build Logs & Threads| PEVDev["pev.dev Forum API"]
+        T_YT["search_vesc_youtube_guides()"] -->|Query Creator Guides| YouTubeService["YouTube Creator Registry<br/>(surfdado, Jay, Vedder)"]
+        T_Discord["find_discord_resources()"] -->|Retrieve Invites & Channels| DiscordService["Discord Registry<br/>(Float with VESC, Vescify)"]
+    end
+
+    subgraph HardwareTools ["3. Diagnostics & Database"]
+        T_Diag["diagnose_vesc_fault()"] --> FaultKB["VESC Fault Code KB<br/>(DRV8301, ABS Overcurrent)"]
+        T_HWList["lookup_hardware_components()"] --> FirestoreDB[("Firestore Database<br/>Collections: hardware, presets")]
+        T_HWGet["get_hardware_details()"] --> FirestoreDB
+        T_HWAdd["add_hardware_component()"] --> FirestoreDB
+        T_TuneList["lookup_tune_presets()"] --> FirestoreDB
+        T_TuneAdd["add_tune_preset()"] --> FirestoreDB
+    end
+
+    subgraph VisualTools ["4. Schematic & Visual Generation"]
+        T_Diagram["generate_vesc_diagram()"] --> Imagen["Vertex AI Image Generation<br/>(gemini-3.1-flash-lite-image)"]
+        Imagen -->|Upload PNG/JPG| GCSBucket[("Cloud Storage Bucket<br/>Public Diagrams")]
+        GCSBucket -.->|Public HTTPS Link| A2UICallback
+    end
+
+    RootAgent --> T_Mem
+    RootAgent --> T_PEV
+    RootAgent --> T_YT
+    RootAgent --> T_Discord
+    RootAgent --> T_Diag
+    RootAgent --> T_HWList
+    RootAgent --> T_HWGet
+    RootAgent --> T_HWAdd
+    RootAgent --> T_TuneList
+    RootAgent --> T_TuneAdd
+    RootAgent --> T_Diagram
+```
+
+### 1.2 Registered Tool Suite Reference Table
+
+| Category | Tool Function | Purpose & Backend Service |
+| :--- | :--- | :--- |
+| **Memory** | `PreloadMemoryTool` | Preloads saved user facts (motor specs, battery voltage, rider weight) from **Vertex AI Memory Bank**. |
+| **Community** | `search_pev_knowledge` | Fetches forum posts and troubleshooting logs from **pev.dev**. |
+| **Community** | `search_vesc_youtube_guides` | Returns curated video guides by creators like *surfdado*, *Jay is Doing Stuff*, and *Benjamin Vedder*. |
+| **Community** | `find_discord_resources` | Returns direct community Discord invites and channel guides (*Float with VESC*, *VESC Development*, *Vescify*). |
+| **Diagnostics** | `diagnose_vesc_fault` | Provides root-cause analysis and hardware mitigation for VESC terminal faults (`FAULT_CODE_DRV`, `ABS_OVER_CURRENT`, `FAULT_CODE_HIGH_OFFSET_CURRENT_SENSOR_1`). |
+| **Hardware DB** | `lookup_hardware_components` | Lists and filters controllers, motors, batteries, and BMS options from **Firestore**. |
+| **Hardware DB** | `get_hardware_details` | Retrieves full technical electrical specs (continuous current, peak current, voltage ceiling) from **Firestore**. |
+| **Hardware DB** | `add_hardware_component` | Allows the agent to save newly announced controller hardware into **Firestore**. |
+| **Tuning DB** | `lookup_tune_presets` | Retrieves community balance presets (PID gains, tiltback angle, field weakening) from **Firestore**. |
+| **Tuning DB** | `add_tune_preset` | Persists custom rider balance presets into **Firestore**. |
+| **Schematics** | `generate_vesc_diagram` | Generates technical wiring diagrams using **Vertex AI Image Generation** and hosts them on **Cloud Storage**. |
+
+---
+
 ## 2. Prerequisites for Your Local Machine
 
 Ensure your laptop has the following tools installed:
