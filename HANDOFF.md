@@ -11,13 +11,13 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                       User Browser                          │
-│   (Custom Chat UI with Dark Mode, Prompt Chips, A2UI cards)  │
+│   (Custom Chat UI with Dark Mode, Prompt Chips, A2UI cards) │
 └──────────────────────────────┬──────────────────────────────┘
                                │ HTTP / JSON (/chat)
 ┌──────────────────────────────▼──────────────────────────────┐
 │                    FastAPI Proxy (frontend/)                │
 │    - Authenticates via ADC (Google Cloud Credentials)       │
-│    - Maintains user session contexts                       │
+│    - Maintains user session contexts                        │
 │    - Communicates over Google A2A Protocol                  │
 └──────────────────────────────┬──────────────────────────────┘
                                │ A2A Stream (RPC)
@@ -97,12 +97,6 @@ gcloud storage buckets add-iam-policy-binding gs://$BUCKET_NAME \
   --role=roles/storage.objectViewer
 ```
 
-### Step 3.5: Create a Vertex AI Memory Bank (Optional but Recommended)
-In Vertex AI Agent Platform:
-```bash
-# Can be created via Python or Vertex AI Console for long-term memory
-```
-
 ---
 
 ## 4. Local Workspace Initialization
@@ -123,9 +117,128 @@ gcloud auth application-default login
 ### Step 4.3: Configure `.env`
 Create a `.env` file in the root directory:
 ```bash
-cat << EOF > .env
+cat << "ENV_EOF" > .env
 GOOGLE_CLOUD_PROJECT=$PROJECT_ID
 GOOGLE_CLOUD_LOCATION=$REGION
 GCS_IMAGE_BUCKET=$BUCKET_NAME
-# If using Vertex AI Memory Bank:
-# MEMORY_BANK_ID=projects/<your-project-number>/locations/us-east1/memoryBanks/<id>
+# Optional: MEMORY_BANK_ID=projects/<your-project-number>/locations/us-east1/memoryBanks/<id>
+ENV_EOF
+```
+
+---
+
+## 5. Seed Firestore Hardware Catalog
+
+Populate the Firestore database with verified controllers (Little FOCer, Thor 300, Spintend, Trionic) and baseline tuning presets:
+```bash
+uv venv
+source .venv/bin/activate
+uv pip install -r pyproject.toml
+python seed_db.py
+```
+
+---
+
+## 6. Running Locally in Development
+
+You can run the agent locally using the built-in playground or run the FastAPI chat frontend.
+
+### Option A: ADK / Agent Playground
+```bash
+agents-cli playground
+# Opens http://localhost:8000 with live reload and debugging
+```
+
+### Option B: Run the Full Chat UI Frontend
+```bash
+cd frontend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# Set your deployed agent resource name or run against local:
+export AGENT_ENGINE_RESOURCE_NAME="projects/<project-num>/locations/<region>/reasoningEngines/<id>"
+export AGENT_DIRECTORY="app"
+export PORT="8080"
+
+python main.py
+# Open http://localhost:8080
+```
+
+---
+
+## 7. Deploying to Production on Google Cloud
+
+### Step 7.1: Deploy the Agent to Vertex AI Agent Platform
+From the repository root:
+```bash
+agents-cli deploy --project $PROJECT_ID
+```
+*Note down the resulting `Remote Agent Engine Resource Name` printed in the output.*
+
+### Step 7.2: Grant Agent Engine Service Account Permissions
+Vertex AI Agent Engine runs under a generated service agent:
+`service-<PROJECT_NUMBER>@gcp-sa-aiplatform-re.iam.gserviceaccount.com`
+
+Grant it permissions for Firestore and Cloud Storage:
+```bash
+PROJECT_NUM=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+AGENT_SA="service-${PROJECT_NUM}@gcp-sa-aiplatform-re.iam.gserviceaccount.com"
+
+# Firestore access
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$AGENT_SA" \
+  --role="roles/datastore.user"
+
+# Storage access to save diagrams
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$AGENT_SA" \
+  --role="roles/storage.objectAdmin"
+```
+
+### Step 7.3: Deploy Chat Frontend to Cloud Run
+```bash
+cd frontend
+
+# Grant Compute Engine default service account access to call Vertex AI Agent Engine
+COMPUTE_SA="${PROJECT_NUM}-compute@developer.gserviceaccount.com"
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$COMPUTE_SA" \
+  --role="roles/aiplatform.user"
+
+# Deploy to Cloud Run
+gcloud run deploy vesc-copilot-frontend \
+  --source . \
+  --region $REGION \
+  --project $PROJECT_ID \
+  --service-account $COMPUTE_SA \
+  --set-env-vars AGENT_ENGINE_RESOURCE_NAME="<PASTE_AGENT_ENGINE_RESOURCE_NAME>",AGENT_DIRECTORY="app" \
+  --allow-unauthenticated
+```
+
+---
+
+## 8. Key Code Files & Directory Map
+
+| Path | Purpose |
+| :--- | :--- |
+| `app/agent.py` | Core ADK root agent, prompt configuration, tool registrations, and A2UI schema manager. |
+| `app/firestore_service.py` | Hardware catalog & presets lookup from Firestore DB. |
+| `app/pev_service.py` | `pev.dev` community forum search integration. |
+| `app/youtube_service.py` | Video tutorial searches for creators (surfdado, Jay is Doing Stuff, Vedder). |
+| `app/discord_service.py` | Curated Discord community invite and channel mapping. |
+| `app/image_service.py` | Technical schematic generator using Gemini Imagen + Cloud Storage. |
+| `frontend/main.py` | FastAPI proxy translating browser requests to Agent Engine over the A2A protocol. |
+| `frontend/static/index.html` | Custom chat UI: dark mode, typing indicator, quick prompt chips, A2UI renderer, lightbox modal, and markdown auto-link parser. |
+| `frontend/Dockerfile` | Container build definition for Cloud Run. |
+| `seed_db.py` | Script to seed initial VESC hardware and tune presets into Firestore. |
+| `vesc_copilot_demo.mp4` | Recorded video demonstration with upbeat lo-fi soundtrack. |
+
+---
+
+## 9. Antigravity Specific Tips
+
+If developing with **Antigravity CLI** or **Antigravity IDE**:
+- Skills and configurations are located in `.agents/skills/`.
+- Project guidelines and instructions are defined in `GEMINI.md`.
+- You can invoke subagents for testing, code refinement, or eval workflows using `agents-cli eval`.
