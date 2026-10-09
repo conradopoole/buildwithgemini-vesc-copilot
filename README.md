@@ -1,94 +1,97 @@
-# sample-agent
+# ⚡ VESC Copilot
 
-Simple ReAct agent
-Agent generated with `agents-cli` version `1.4.0`
+> **AI-Powered Hardware Advisor & Diagnostic Tuning Assistant for DIY Personal Electric Vehicles (PEVs)**
 
-## Project Structure
-
-```
-sample-agent/
-├── app/         # Core agent code
-│   ├── agent.py               # Main agent logic
-│   ├── fast_api_app.py        # FastAPI Backend server
-│   └── app_utils/             # App utilities and helpers
-├── tests/                     # Unit, integration, and load tests
-├── GEMINI.md                  # AI-assisted development guide
-└── pyproject.toml             # Project dependencies
-```
-
-> 💡 **Tip:** Use [Antigravity CLI](https://antigravity.google/) for AI-assisted development - project context is pre-configured in `GEMINI.md`.
-
-## Requirements
-
-Before you begin, ensure you have:
-- **uv**: Python package manager (used for all dependency management in this project) - [Install](https://docs.astral.sh/uv/getting-started/installation/) ([add packages](https://docs.astral.sh/uv/concepts/dependencies/) with `uv add <package>`)
-- **agents-cli**: Agents CLI - Install with `uv tool install google-agents-cli`
-- **Google Cloud SDK**: For GCP services - [Install](https://cloud.google.com/sdk/docs/install)
-
-
-## Quick Start
-
-Install `agents-cli` and its skills if not already installed:
-
-```bash
-uvx google-agents-cli setup
-```
-
-Install required packages:
-
-```bash
-agents-cli install
-```
-
-Test the agent with a local web server:
-
-```bash
-agents-cli playground
-```
-
-You can also use features from the [ADK](https://adk.dev/) CLI with `uv run adk`.
-
-## Commands
-
-| Command              | Description                                                                                 |
-| -------------------- | ------------------------------------------------------------------------------------------- |
-| `agents-cli install` | Install dependencies using uv                                                         |
-| `agents-cli playground` | Launch local development environment                                                  |
-| `agents-cli lint`    | Run code quality checks                                                               |
-| `agents-cli eval`    | Evaluate agent behavior (generate, grade, analyze, and more — see `agents-cli eval --help`) |
-| `uv run pytest tests/unit tests/integration` | Run unit and integration tests                                                        |
-| `agents-cli deploy`  | Deploy agent to Agent Runtime                                                                |
-| `agents-cli publish gemini-enterprise` | Register deployed agent to Gemini Enterprise                    || [A2A Inspector](https://github.com/a2aproject/a2a-inspector) | Launch A2A Protocol Inspector                                                        |
-
-## 🛠️ Project Management
-
-| Command | What It Does |
-|---------|--------------|
-| `agents-cli scaffold enhance` | Add CI/CD pipelines and Terraform infrastructure |
-| `agents-cli infra cicd` | One-command setup of entire CI/CD pipeline + infrastructure |
-| `agents-cli scaffold upgrade` | Auto-upgrade to latest version while preserving customizations |
+Built with **Google ADK (Agent Development Kit)**, **Vertex AI Agent Engine**, **Gemini**, and deployed via **FastAPI** to **Cloud Run**.
 
 ---
 
-## Development
+## 🛹 What is VESC Copilot?
 
-Edit your agent logic in `app/agent.py` and test with `agents-cli playground` - it auto-reloads on save.
+**VESC Copilot** is a specialized autonomous assistant designed for builders and riders of DIY electric skateboards, Onewheel conversions, and custom PEVs running open-source VESC® motor controllers.
 
-## Deployment
+### Key Capabilities:
+- **⚡ Hardware Compatibility & Specs**: Instant lookup of VESC controllers (Little FOCer, Thor 300, Spintend, Trionic), motor current limits, and battery voltage ceilings stored in **Firestore**.
+- **🔍 Fault Diagnostics**: Step-by-step troubleshooting for critical VESC faults (e.g. `FAULT_CODE_DRV`, `ABS_OVER_CURRENT`, Hall sensor misconfigurations).
+- **🌐 Real Community Grounding**: Cites real build logs and solutions from [pev.dev](https://pev.dev), creator videos (surfdado, Jay is Doing Stuff, Benjamin Vedder), and active Discord servers (*Float with VESC*, *VESC Development*, *Vescify*).
+- **📐 Technical Wiring Schematics**: Dynamically generates high-voltage wiring diagrams and pinouts via Vertex AI Image Generation hosted on Cloud Storage.
+- **🎨 Modern A2UI Experience**: Interactive frontend with dark mode, prompt chips, copy-to-clipboard cards, image lightbox modal, and clickable source links.
 
-```bash
-gcloud config set project <your-project-id>
-agents-cli deploy
+---
+
+## 🎥 Video Demo
+
+The repository includes a live recorded demonstration:
+- [vesc_copilot_demo.mp4](./vesc_copilot_demo.mp4) — Full end-to-end demo featuring prompt chips, diagram generation, lightbox preview, and custom upbeat lo-fi soundtrack.
+
+---
+
+## 🏗️ Architecture
+
+```
+User (Browser) 
+   │ 
+   ▼ HTTP / JSON
+FastAPI Proxy (`frontend/main.py`)
+   │ 
+   ▼ A2A Protocol (Agent-to-Agent)
+Vertex AI Agent Engine (`app/agent.py`)
+   ├── Gemini 2.5 Flash
+   ├── Firestore DB (Hardware Catalog & Tune Presets)
+   ├── Vertex AI Memory Bank (Long-term Rider Memory)
+   ├── Cloud Storage (Generated Schematics & Diagrams)
+   └── External Tooling (pev.dev, YouTube, Discord)
 ```
 
-To add CI/CD and Terraform, run `agents-cli scaffold enhance`.
-To set up your production infrastructure, run `agents-cli infra cicd`.
+---
 
-## Observability
+## 🚀 Quick Start (Local Development)
 
-Built-in telemetry exports to Cloud Trace, BigQuery, and Cloud Logging.
+### 1. Prerequisites
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- [gcloud CLI](https://cloud.google.com/sdk/docs/install)
+- `agents-cli`: `uv tool install google-agents-cli`
 
-## A2A Inspector
+### 2. Environment Setup
+```bash
+git clone https://github.com/conradopoole/buildwithgemini-vesc-copilot.git
+cd buildwithgemini-vesc-copilot
 
-This agent supports the [A2A Protocol](https://a2a-protocol.org/). Use the [A2A Inspector](https://github.com/a2aproject/a2a-inspector) to test interoperability.
-See the [A2A Inspector docs](https://github.com/a2aproject/a2a-inspector) for details.
+# Authenticate with GCP
+gcloud auth login
+gcloud auth application-default login
+
+# Install dependencies
+uv venv
+source .venv/bin/activate
+uv pip install -r pyproject.toml
+
+# Seed initial Firestore catalog
+python seed_db.py
+```
+
+### 3. Run Development Playground
+```bash
+agents-cli playground
+# Opens http://localhost:8000
+```
+
+### 4. Run Custom Web Chat UI
+```bash
+cd frontend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+export AGENT_ENGINE_RESOURCE_NAME="projects/<project-num>/locations/us-east1/reasoningEngines/<id>"
+export AGENT_DIRECTORY="app"
+python main.py
+# Opens http://localhost:8080
+```
+
+---
+
+## 📖 Complete Handoff & Cloud Setup Guide
+
+For step-by-step instructions on recreating the entire Google Cloud infrastructure, setting up IAM permissions, provisioning Memory Banks, and deploying both the backend agent and Cloud Run frontend, see **[HANDOFF.md](./HANDOFF.md)**.
