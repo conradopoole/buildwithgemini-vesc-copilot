@@ -11,7 +11,7 @@ Built with **Google ADK (Agent Development Kit)**, **Vertex AI Agent Engine**, *
 **VESC Copilot** is a specialized autonomous assistant designed for builders and riders of DIY electric skateboards, Onewheel conversions, and custom PEVs running open-source VESC® motor controllers.
 
 ### Key Capabilities:
-- **⚡ Hardware Compatibility & Specs**: Instant lookup of VESC controllers (Little FOCer, Thor 300, Spintend, Trionic), motor current limits, and battery voltage ceilings stored in **Firestore**.
+- **⚡ Hardware Compatibility & Specs**: Instant lookup of modern and popular VESC controllers (Fungineers Thor400, Thor301, Zeus400; Floatwheel GTV Kit, PintV Kit, ADV500; JetFleet F6, G18 GaN; ENNOID MK8/MK9 Pro), motor current limits, and battery voltage ceilings stored in **Firestore**.
 - **🔍 Fault Diagnostics**: Step-by-step troubleshooting for critical VESC faults (e.g. `FAULT_CODE_DRV`, `ABS_OVER_CURRENT`, Hall sensor misconfigurations).
 - **🌐 Real Community Grounding**: Cites real build logs and solutions from [pev.dev](https://pev.dev), creator videos (surfdado, Jay is Doing Stuff, Benjamin Vedder), and active Discord servers (*Float with VESC*, *VESC Development*, *Vescify*).
 - **📐 Technical Wiring Schematics**: Dynamically generates high-voltage wiring diagrams and pinouts via Vertex AI Image Generation hosted on Cloud Storage.

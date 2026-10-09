@@ -211,7 +211,7 @@ ENV_EOF
 
 ## 5. Seed Firestore Hardware Catalog
 
-Populate the Firestore database with verified controllers (Little FOCer, Thor 300, Spintend, Trionic) and baseline tuning presets:
+Populate the Firestore database with modern and commonly used flagship controllers (Fungineers Thor400, Thor301, Zeus400; Floatwheel GTV Kit, PintV Kit, ADV500, ADV200; JetFleet F6, G18 GaN; ENNOID MK8, MK8 Pro, MK9 Pro) alongside motors, BMS units, and baseline tuning presets:
 ```bash
 uv venv
 source .venv/bin/activate
